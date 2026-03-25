@@ -1,0 +1,27 @@
+Project is ready. Here's the structure:                                                                                                                                               
+                                                                                                                                                                                        
+  kueue-test/                                                                                                                                                                           
+  ├── setup.sh          # install Kueue + create queues                                                                                                                                 
+  ├── run-pods.sh       # submit the 6 test pods                                                                                                                                        
+  ├── teardown.sh       # cleanup                                                                                                                                                       
+  └── manifests/                                                                                                                                                                        
+      ├── kueue-config.yaml      # enables pod integration                                                                                                                              
+      ├── resource-flavor.yaml   # default-flavor (no node constraints)                                                                                                                 
+      ├── cluster-queue.yaml     # BestEffortFIFO, 4 CPU / 4Gi quota                                                                                                                    
+      ├── local-queue.yaml       # default namespace → cluster queue                                                                                                                    
+      └── test-pods.yaml         # 6 pods, each sleeps 5s                                                                                                                               
+                                                                                                                                                                                        
+  Usage                                                                                                                                                                                 
+                                                                                                                                                                                        
+  ./setup.sh       # ~2-3 min: starts minikube, installs Kueue v0.9.1, configures queues                                                                                                
+  ./run-pods.sh    # submits all 6 pods and watches them                                                                                                                                
+  ./teardown.sh    # cleanup                                                                                                                                                            
+                                                                                                                                                                                        
+  Key design decisions                                                                                                                                                                  
+                                                                                                                                                                                      
+  - Pod integration is enabled in kueue-config.yaml — Kueue doesn't manage plain pods by default, so the ConfigMap is patched and the controller restarted during setup.                
+  - BestEffortFIFO is set on the ClusterQueue. Pods are admitted in submission order, but Kueue won't block later pods if an earlier one can't be scheduled (best-effort).
+  - Each pod requests 250m CPU / 64Mi memory. With 4 CPU quota, all 6 fit simultaneously (~1.5 CPU total), so you'll see them all admitted at once. If you want to observe queuing,     
+  reduce the quota in cluster-queue.yaml (e.g., nominalQuota: "500m" for CPU).                                                                                                          
+  - Pods must have the label kueue.x-k8s.io/queue-name: test-local-queue — that's how Kueue picks them up.                                                                        
+                                                                                                           
